@@ -1,0 +1,33 @@
+name: ai_gateway
+version: 1.0.0
+description: Unified AI Gateway with OpenAI-compatible API
+author: Prism Framework
+
+# This marks it as a meta plugin (plugin group)
+type: group
+
+# Sub-plugins
+subplugins:
+  - model_router
+  - claude_provider
+  - openai_provider
+
+# Preset chains (元插件内部定义的调用链)
+chains:
+  # Standard chat completion chain
+  chat:
+    description: "Standard chat completion with intelligent model routing"
+    plugins:
+      - model_router  # Router will dynamically call the correct provider
+    # 注意: model_router 会根据 model 字段自动选择并调用:
+    #   - claude_provider (如果 model 以 claude 开头)
+    #   - openai_provider (如果 model 以 gpt 开头)
+
+# 元插件权限 (子插件会继承这些权限)
+permissions:
+  - type: network.https
+    resource: api.anthropic.com
+    description: "Call Anthropic Claude API (claude_provider 需要)"
+  - type: network.https
+    resource: api.openai.com
+    description: "Call OpenAI API (openai_provider 需要)"

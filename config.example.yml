@@ -1,0 +1,83 @@
+# Prism 配置模板（请复制为 config.yml 并按需修改）。
+# 提示：示例中使用了 "${ENV:default}" 形式的占位，运行时会用环境变量替换。
+
+# 服务器
+server:
+  host: "0.0.0.0"
+  port: 8080
+  workers: 4
+  log_level: "info"
+  cors:
+    allow_origins: ["http://localhost:3000"]
+    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers: ["Content-Type", "Authorization"]
+    allow_credentials: false
+
+# 数据库
+database:
+  url: "${DATABASE_URL:sqlite+aiosqlite:///./ai_gateway.db}"
+  pool_size: 20
+  max_overflow: 40
+  echo: false
+
+# Redis
+redis:
+  url: "${REDIS_URL:redis://localhost:6379/0}"
+  pool_size: 10
+  decode_responses: true
+  enabled: false
+
+# 本地缓存
+cache:
+  backend: "memory"     # memory | redis
+  memory_max_size: 10000
+  memory_ttl_seconds: 300
+
+# 安全配置
+security:
+  # 强烈建议生产环境使用强随机密钥：openssl rand -hex 32
+  secret_key: "${SECRET_KEY:<REPLACE_WITH_STRONG_SECRET>}"
+  algorithm: "HS256"
+  access_token_expire_minutes: 30
+  refresh_token_expire_days: 7
+  trusted_plugins: []
+
+# 插件系统
+plugins:
+  enabled:
+    - oauth_key_frontend
+  auto_load: true
+  directory: "plugins"
+  isolated_env: false
+  hot_reload: false
+  hot_reload_interval: 2.0
+  verify_signatures: false
+  trusted_keys_dir: "trusted_keys"
+
+# 沙箱
+sandbox:
+  enabled: true
+  timeout: 30
+  memory_limit: "512M"
+  cpu_time_limit: 300
+
+# 速率限制
+rate_limiting:
+  default_limit: 100
+  default_period: 60
+
+# 监控与可观测
+monitoring:
+  telemetry_enabled: false
+  otlp_endpoint: "http://localhost:4317"
+
+# 路由与插件链（示例：/ai_gateway/chat）
+routes:
+  "/ai_gateway/chat":
+    chain:
+      - plugin: "ai_gateway.model_router"
+
+# 管理员初始账号（仅用于首次初始化）
+admin_username: "admin"
+admin_password: "ChangeMe"
+

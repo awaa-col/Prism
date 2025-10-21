@@ -1,0 +1,24 @@
+# ai_gateway Meta Plugin Manifest
+# This manifest declares all permissions required by the meta-plugin and its sub-plugins.
+name: "ai_gateway"
+version: "1.0.0"
+description: "Unified AI Gateway with OpenAI-compatible API"
+author: "Prism Framework"
+
+dependencies: []
+
+permissions:
+  # Permission for the gateway to create its OpenAI-compatible API endpoint.
+  - type: api
+    resource: create_route
+    description: "Create OpenAI-compatible chat completion endpoint."
+
+  # Permission for the 'claude_provider' sub-plugin.
+  - type: "network.https"
+    resource: "api.anthropic.com"
+    description: "Allow 'claude_provider' to access Anthropic's Claude API."
+
+  # Permission for the 'openai_provider' sub-plugin.
+  - type: "network.https"
+    resource: "api.openai.com"
+    description: "Allow 'openai_provider' to access OpenAI's API."

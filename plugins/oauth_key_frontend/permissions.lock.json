@@ -1,0 +1,38 @@
+{
+  "plugin_name": "oauth_key_frontend",
+  "github_url": "local://G:\\Prism\\plugins\\oauth_key_frontend",
+  "permissions": [
+    {
+      "type": "api",
+      "resource": "create_route",
+      "description": "Register own API routes",
+      "risk_level": "low"
+    },
+    {
+      "type": "network.http_get",
+      "resource": "/api/v1/*",
+      "description": "Allow calling own backend API for OAuth and key management.",
+      "risk_level": "low"
+    },
+    {
+      "type": "network.http_delete",
+      "resource": "/api/v1/*",
+      "description": "Allow calling own backend API for key management.",
+      "risk_level": "low"
+    },
+    {
+      "type": "file",
+      "resource": "read",
+      "description": "Required to read its own UI file (index.html) during initialization.",
+      "risk_level": "low"
+    },
+    {
+      "type": "network.http_post",
+      "resource": "/api/v1/*",
+      "description": "Allow calling own backend API for OAuth and key management.",
+      "risk_level": "low"
+    }
+  ],
+  "created_at": "339133.0790242",
+  "version": "1.0"
+}

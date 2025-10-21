@@ -1,0 +1,22 @@
+{
+  "plugin_name": "ai_gateway",
+  "permissions": [
+    {
+      "type": "api",
+      "resource": "create_route",
+      "description": "Create OpenAI-compatible chat completion endpoint."
+    },
+    {
+      "type": "network.https",
+      "resource": "api.anthropic.com",
+      "description": "Allow 'claude_provider' to access Anthropic's Claude API."
+    },
+    {
+      "type": "network.https",
+      "resource": "api.openai.com",
+      "description": "Allow 'openai_provider' to access OpenAI's API."
+    }
+  ],
+  "created_at": "59233.1666709",
+  "version": "1.0"
+}

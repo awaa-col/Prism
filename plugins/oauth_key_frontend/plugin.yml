@@ -1,0 +1,24 @@
+# plugin.yml for the OAuth & Key Frontend Plugin
+name: "OAuth & Key Frontend"
+version: "1.0.0"
+author: "白岚"
+description: "A simple frontend UI to test user OAuth login and API key self-management."
+
+# This plugin needs to call the backend API to function.
+# It's a good example of a trusted, first-party UI plugin.
+permissions:
+  - type: network.http_get
+    resource: "/api/v1/*"
+    description: "Allow calling own backend API for OAuth and key management."
+  - type: network.http_post
+    resource: "/api/v1/*"
+    description: "Allow calling own backend API for OAuth and key management."
+  - type: network.http_delete
+    resource: "/api/v1/*"
+    description: "Allow calling own backend API for key management."
+  - type: file
+    resource: "read"
+    description: "Required to read its own UI file (index.html) during initialization."
+  - type: api
+    resource: create_route
+    description: "Register own API routes"

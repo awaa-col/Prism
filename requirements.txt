@@ -1,0 +1,33 @@
+# Core Framework
+fastapi>=0.110.0,<0.115.0
+uvicorn>=0.27.0,<0.30.0
+
+# Database
+sqlalchemy>=2.0.0,<3.0.0
+psycopg2-binary>=2.9.0
+alembic>=1.13.0,<2.0.0
+
+# Validation & Settings
+pydantic>=2.6.0,<3.0.0
+pydantic-settings>=2.2.0,<3.0.0
+
+# Security & Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Cache & Storage
+redis>=5.0.0
+
+# Async HTTP & File Operations
+httpx>=0.27.0
+aiofiles>=24.0.0
+
+# Utilities
+pyyaml>=6.0.0
+click>=8.1.0
+requests>=2.31.0
+rich>=13.0.0
+
+# AI Gateway Dependencies
+anthropic>=0.25.0,<1.0.0
+openai>=1.0.0,<2.0.0

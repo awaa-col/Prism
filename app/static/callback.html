@@ -1,0 +1,74 @@
+<![CDATA[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authenticating...</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; text-align: center; padding-top: 5rem; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { max-width: 400px; }
+        .message { font-size: 1.2rem; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1.5rem auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <p class="message">Authentication successful. This window will now close.</p>
+    </div>
+    <script>
+        (async function() {
+            let messagePayload;
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const ticket = params.get('ticket');
+                const error = params.get('error');
+
+                if (error) {
+                    messagePayload = { type: 'oauth_error', error: error };
+                } else if (ticket) {
+                    const response = await fetch('/api/v1/auth/oauth/ticket/exchange', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ ticket: ticket })
+                    });
+
+                    if (response.ok) {
+                        const tokenData = await response.json();
+                        if (tokenData.access_token && tokenData.refresh_token) {
+                            messagePayload = { 
+                                type: 'oauth_success', 
+                                access_token: tokenData.access_token,
+                                refresh_token: tokenData.refresh_token
+                            };
+                        } else {
+                            messagePayload = { type: 'oauth_error', error: 'Token exchange failed: Invalid token data received.' };
+                        }
+                    } else {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.detail || `Token exchange failed with status: ${response.status}`;
+                        messagePayload = { type: 'oauth_error', error: errorMessage };
+                    }
+                } else {
+                    messagePayload = { type: 'oauth_error', error: 'Required ticket or error not found in callback URL.' };
+                }
+            } catch (e) {
+                 messagePayload = { type: 'oauth_error', error: 'An unexpected error occurred in the callback window.' };
+                 console.error("Callback error:", e);
+            } finally {
+                if (window.opener) {
+                    const targetOrigin = window.location.origin;
+                    window.opener.postMessage(messagePayload, targetOrigin);
+                }
+                // Close the window after a short delay to ensure the message is sent.
+                setTimeout(() => window.close(), 700);
+            }
+        })();
+    </script>
+</body>
+</html>
+]]>

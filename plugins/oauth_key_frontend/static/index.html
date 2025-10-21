@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prism - OAuth & Key Test</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #1c1e21; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h1, h2 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        button { background-color: #1877f2; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-size: 16px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover { background-color: #166fe5; }
+        button.delete { background-color: #e02c4d; }
+        button.delete:hover { background-color: #c92846; }
+        #login-section, #dashboard-section { margin-top: 20px; }
+        #dashboard-section { display: none; }
+        ul { list-style: none; padding: 0; }
+        li { background-color: #f7f8fa; padding: 15px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; word-break: break-all; }
+        .key-info { flex-grow: 1; margin-right: 15px; }
+        .key-info span { display: block; font-family: "Courier New", Courier, monospace; font-size: 14px; }
+        .key-info .key-name { font-weight: bold; font-family: inherit; font-size: 16px; color: #000; }
+        .key-info .key-value { color: #555; }
+        pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OAuth & API Key Self-Service Test</h1>
+        
+        <div id="login-section">
+            <h2>Step 1: Login</h2>
+            <button id="login-btn">Login with GitHub</button>
+        </div>
+
+        <div id="dashboard-section">
+            <h2>Step 2: Manage Your API Keys</h2>
+            <p>Logged in as: <b id="user-email"></b></p>
+            <button id="create-key-btn">Create New API Key</button>
+            <h3>Your Keys:</h3>
+            <ul id="keys-list"></ul>
+        </div>
+
+        <div id="new-key-section" class="hidden">
+            <h2>New API Key Created!</h2>
+            <p>Please copy your new API key. You will not be able to see it again.</p>
+            <pre id="new-key-value"></pre>
+            <button id="back-to-dash-btn">Done</button>
+        </div>
+    </div>
+
+    <script>
+        const loginBtn = document.getElementById('login-btn');
+        const createKeyBtn = document.getElementById('create-key-btn');
+        const backToDashBtn = document.getElementById('back-to-dash-btn');
+        
+        const loginSection = document.getElementById('login-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const newKeySection = document.getElementById('new-key-section');
+        
+        const userEmailEl = document.getElementById('user-email');
+        const keysList = document.getElementById('keys-list');
+        const newKeyValueEl = document.getElementById('new-key-value');
+
+        const API_BASE = '/api/v1';
+        let accessToken = null;
+        let refreshToken = null;
+
+        // --- OAuth Flow ---
+        loginBtn.addEventListener('click', () => {
+            const oauthUrl = `${API_BASE}/auth/oauth/github/authorize`;
+            const oauthWindow = window.open(oauthUrl, '_blank', 'width=600,height=700');
+        });
+
+        window.addEventListener('message', event => {
+            // IMPORTANT: Check the origin of the message for security
+            // In a real app, you would check against your specific domain.
+            // For local dev, this is a simplified check.
+            if (event.origin !== window.origin) {
+                console.warn("Message from untrusted origin ignored:", event.origin);
+                return;
+            }
+
+            const data = event.data || {};
+            if (data.type === 'oauth_success') {
+                console.log("OAuth Success!", data);
+                accessToken = data.access_token || (data.payload && data.payload.access_token) || null;
+                refreshToken = data.refresh_token || (data.payload && data.payload.refresh_token) || null;
+                if (!accessToken) {
+                    alert("OAuth success message missing access token.");
+                    return;
+                }
+                // Fetch profile from backend
+                fetchProfileAndSetup();
+            } else if (data.type === 'oauth_error') {
+                alert(`OAuth error: ${data.error || 'Unknown error'}`);
+            }
+        }, false);
+
+        // --- Dashboard Setup ---
+        function setupDashboard(userInfo) {
+            loginSection.style.display = 'none';
+            dashboardSection.style.display = 'block';
+            userEmailEl.textContent = userInfo.email || 'N/A';
+            fetchApiKeys();
+        }
+
+        async function fetchProfileAndSetup() {
+            try {
+                const me = await apiFetch('/identity/me');
+                setupDashboard(me);
+            } catch (e) {
+                console.warn('Failed to fetch profile, continue with minimal UI.', e);
+                setupDashboard({ email: 'N/A' });
+            }
+        }
+
+        // --- API Calls ---
+        async function apiFetch(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            };
+            if (accessToken) {
+                headers['Authorization'] = `Bearer ${accessToken}`;
+            }
+
+            const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+
+            if (response.status === 204) {
+                return null;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Error: ${errorData.message || response.statusText}`);
+                throw new Error(errorData.message);
+            }
+            return response.json();
+        }
+
+        async function fetchApiKeys() {
+            try {
+                const response = await apiFetch('/account/api-keys');
+                renderKeys(response.data);
+            } catch (error) {
+                console.error("Failed to fetch API keys:", error);
+            }
+        }
+
+        createKeyBtn.addEventListener('click', async () => {
+            const keyName = prompt("Enter a name for your new key:", `My-Key-${Date.now()}`);
+            if (!keyName) return;
+
+            try {
+                const response = await apiFetch('/account/api-keys', {
+                    method: 'POST',
+                    body: JSON.stringify({ name: keyName })
+                });
+                showNewKey(response.data.key);
+                fetchApiKeys(); // Refresh list in the background
+            } catch (error) {
+                console.error("Failed to create API key:", error);
+            }
+        });
+
+        async function deleteApiKey(keyId) {
+            if (!confirm("Are you sure you want to delete this API key?")) return;
+
+            try {
+                await apiFetch(`/account/api-keys/${keyId}`, { method: 'DELETE' });
+                fetchApiKeys(); // Refresh list
+            } catch (error) {
+                console.error("Failed to delete API key:", error);
+            }
+        }
+
+        // --- UI Rendering ---
+        function renderKeys(keys) {
+            keysList.innerHTML = '';
+            if (!keys || keys.length === 0) {
+                keysList.innerHTML = '<li>No API keys found.</li>';
+                return;
+            }
+            keys.forEach(key => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="key-info">
+                        <span class="key-name">${key.name}</span>
+                        <span class="key-value">${key.displayable_key}</span>
+                    </div>
+                    <button class="delete">Delete</button>
+                `;
+                li.querySelector('.delete').addEventListener('click', () => deleteApiKey(key.id));
+                keysList.appendChild(li);
+            });
+        }
+
+        function showNewKey(key) {
+            dashboardSection.style.display = 'none';
+            newKeySection.classList.remove('hidden');
+            newKeyValueEl.textContent = key;
+        }
+
+        backToDashBtn.addEventListener('click', () => {
+            newKeySection.classList.add('hidden');
+            dashboardSection.style.display = 'block';
+            newKeyValueEl.textContent = '';
+        });
+
+        // --- Logout ---
+        const logoutBtn = document.createElement('button');
+        logoutBtn.textContent = 'Logout';
+        logoutBtn.className = 'delete';
+        document.querySelector('.container').appendChild(logoutBtn);
+        logoutBtn.addEventListener('click', async () => {
+            if (!refreshToken) {
+                alert('No refresh token available to logout.');
+                return;
+            }
+            try {
+                await apiFetch('/identity/logout', {
+                    method: 'POST',
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+                accessToken = null;
+                refreshToken = null;
+                dashboardSection.style.display = 'none';
+                newKeySection.classList.add('hidden');
+                userEmailEl.textContent = '';
+                loginSection.style.display = 'block';
+                alert('Logged out');
+            } catch (e) {
+                console.error('Logout failed', e);
+            }
+        });
+
+    </script>
+</body>
+</html>
